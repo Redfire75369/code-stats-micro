@@ -1,15 +1,23 @@
 [{
-    "Name": "codestats",
-    "Description": "Code::Stats Plugin for Micro",
-    "Website": "https://github.com/redfire75369/code-stats-micro",
-    "Tags": ["codestats", "stats"],
-    "Versions": [
-        {
-            "Version": "1.0.0",
-            "Url": "https://github.com/redfire75369/code-stats-micro/archive/v1.0.0.zip",
-            "Require": {
-                "Micro": ">2.0.0"
-            }
-        }
-    ]
+  "Name": "codestats",
+  "Description": "Code::Stats Plugin for Micro",
+  "Website": "https://github.com/redfire75369/code-stats-micro",
+  "Tags": ["codestats", "stats"],
+  "License": "MIT",
+  "Versions": [
+    {
+      "Version": "1.0.0",
+      "Url": "https://github.com/redfire75369/code-stats-micro/archive/v1.0.0.zip",
+      "Require": {
+        "Micro": ">2.0.0"
+      }
+    },
+    {
+      "Version": "1.0.1",
+      "Url": "https://github.com/redfire75369/code-stats-micro/archive/v1.0.1.zip",
+      "Require": {
+        "Micro": ">2.0.0"
+      }
+    }
+  ]
 }]
