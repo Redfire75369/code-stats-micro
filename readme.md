@@ -15,3 +15,4 @@ Micro plugin that counts your keypresses and saves statistics to [Code::Stats](h
   }
   ```
 3. If you want to use a different Code::Stats server, add a `"codestats.apiurl"` key with the url.
+4. Run `micro -plugin install codestats`.

@@ -88,12 +88,10 @@ local fileTypes = {
 	erb = "eruby",
 }
 
-local function getLanguage(fileType)
+function getLanguage(fileType)
 	if fileTypes[fileType] ~= nil then
 		return fileTypes[fileType]
 	end
 
 	return fileType
 end
-
-return getLanguage

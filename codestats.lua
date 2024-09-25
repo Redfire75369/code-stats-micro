@@ -1,4 +1,4 @@
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 local micro = import("micro")
 local config = import("micro/config")
@@ -7,48 +7,15 @@ local util = import("micro/util")
 local strings = import("strings")
 local time = import("time")
 
-local getLanguage = require "filetypes"
-local json = require "json"
-
 local timerInterval = time.ParseDuration("10s")
 local pulse = {}
 
-function init()
-    config.RegisterCommonOption("codestats", "apikey", nil)
-    config.RegisterCommonOption("codestats", "apiurl", "https://codestats.net/api/my/pulses")
-
-    micro.After(timerInterval, sendPulseTimer(false))
+function getCurrentTime()
+    local timestamp = os.date("%Y-%m-%dT%H:%M:%S%z")
+    return string.format("%s:%s", string.sub(timestamp, 1, -3), string.sub(timestamp, -2, -1))
 end
 
-function onBeforeTextEvent(sbuf, textEvent)
-    local def = sbuf.syntaxDef
-
-    local fileType
-    if def == nil then
-        fileType = def.header.FileType
-    else
-        fileType = "unknown"
-    end
-
-	if pulse[fileType] == nil then
-		pulse[fileType] = 0
-	end
-
-	pulse[fileType] = pulse[fileType] + 1
-end
-
-function sendPulseTimer(final)
-    return function()
-        local apiKey = config.GetGlobalOption("codestats.apikey")
-        local apiUrl = config.GetGlobalOption("codestats.apiurl")
-        sendPulse(apiKey, apiUrl)
-        if not final then
-            micro.After(timerInterval, sendPulseTimer(false))
-        end
-    end
-end
-
-function sendPulse(apiKey, apiUrl)
+local function sendPulse(apiKey, apiUrl)
     if apiKey == nil or apiKey == "" or next(pulse) == nil then
         return
     end
@@ -111,7 +78,37 @@ function sendPulse(apiKey, apiUrl)
     end
 end
 
-function getCurrentTime()
-    local timestamp = os.date("%Y-%m-%dT%H:%M:%S%z")
-    return string.format("%s:%s", string.sub(timestamp, 1, -3), string.sub(timestamp, -2, -1))
+local function sendPulseTimer(final)
+    return function()
+        local apiKey = config.GetGlobalOption("codestats.apikey")
+        local apiUrl = config.GetGlobalOption("codestats.apiurl")
+        sendPulse(apiKey, apiUrl)
+        if not final then
+            micro.After(timerInterval, sendPulseTimer(false))
+        end
+    end
+end
+
+function init()
+    config.RegisterCommonOption("codestats", "apikey", nil)
+    config.RegisterCommonOption("codestats", "apiurl", "https://codestats.net/api/my/pulses")
+
+    micro.After(timerInterval, sendPulseTimer(false))
+end
+
+function onBeforeTextEvent(sbuf, textEvent)
+    local def = sbuf.syntaxDef
+
+    local fileType
+    if def == nil then
+        fileType = def.header.FileType
+    else
+        fileType = "unknown"
+    end
+
+	if pulse[fileType] == nil then
+		pulse[fileType] = 0
+	end
+
+	pulse[fileType] = pulse[fileType] + 1
 end

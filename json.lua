@@ -22,7 +22,7 @@
 -- SOFTWARE.
 --
 
-local json = { _version = "0.1.2" }
+json = { _version = "0.1.2" }
 
 -------------------------------------------------------------------------------
 -- Encode
@@ -383,6 +383,3 @@ function json.decode(str)
   end
   return res
 end
-
-
-return json
