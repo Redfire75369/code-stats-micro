@@ -1,4 +1,4 @@
-VERSION = "1.0.2"
+VERSION = "1.1.0"
 
 local micro = import("micro")
 local config = import("micro/config")
@@ -15,14 +15,10 @@ function getCurrentTime()
     return string.format("%s:%s", string.sub(timestamp, 1, -3), string.sub(timestamp, -2, -1))
 end
 
-local function sendPulse(apiKey, apiUrl)
-    if apiKey == nil or apiKey == "" or next(pulse) == nil then
-        return
-    end
-
+local function curlArgs(apiKey, apiUrl)
     local body = {
         coded_at = getCurrentTime(),
-        xps = {}
+        xps = {},
     }
 
     local totalXp = 0
@@ -36,9 +32,8 @@ local function sendPulse(apiKey, apiUrl)
     end
 
     local body = json.encode(body)
-
     local args = {
-        "-s",
+        "-s", "-S",
         "-H", "Content-Type: application/json",
         "-H", string.format("Content-Length: %d", #body),
         "-H", string.format("X-API-Token: %s", apiKey),
@@ -48,10 +43,16 @@ local function sendPulse(apiKey, apiUrl)
         apiUrl,
     }
 
-    local output, err = shell.ExecCommand("curl", unpack(args))
-    if err ~= nil then
-        micro.Log("codestats:", "Error while executing curl", output)
-        micro.InfoBar():Message("Error while executing curl", output)
+    return args, totalXp
+end
+
+local function onCurlExit(output)
+    if data.error ~= nil then
+        micro.Log("codestats:", "Error -", data.error)
+        micro.InfoBar():Message("Error - ", data.error)
+        if not data.final then
+            micro.After(timerInterval, sendPulseTimer(false))
+        end
         return
     end
 
@@ -63,29 +64,51 @@ local function sendPulse(apiKey, apiUrl)
 
     if body ~= nil and status ~= nil then
         if status == 201 and body.ok ~= nil and body.ok == "Great success!" then
-            micro.Log("codestats:", string.format("Successful pulse: %d XP", totalXp))
+            micro.Log("codestats:", string.format("Successful pulse: %d XP", data.totalXp))
             pulse = {}
         else
-            local error = ""
-            if body.error ~= nil then
-                error = body.error
-            end
-
+            local error = body.error or body
             local failed = string.format("Failed pulse (code %d) %s", status, error)
             micro.Log("codestats:", failed)
             micro.InfoBar():Message(failed)
         end
+    else
+        local error = body or "Unknown error"
+        local failed = string.format("Failed pulse and malformed output (code %d) %s", status, error)
+        micro.Log("codestats:", failed)
+        micro.InfoBar():Message(failed)
+    end
+
+    if not data.final then
+        micro.After(timerInterval, sendPulseTimer(false))
     end
 end
 
-local function sendPulseTimer(final)
-    return function()
-        local apiKey = config.GetGlobalOption("codestats.apikey")
-        local apiUrl = config.GetGlobalOption("codestats.apiurl")
-        sendPulse(apiKey, apiUrl)
+local function sendPulse(apiKey, apiUrl, final)
+    if apiKey == nil or apiKey == "" or next(pulse) == nil then
         if not final then
             micro.After(timerInterval, sendPulseTimer(false))
         end
+        return
+    end
+
+    local args, totalXp = curlArgs(apiKey, apiUrl)
+    local data = {}
+    data.totalXp = totalXp
+    data.final = final
+
+    local function onStderr(chunk)
+        data.error = (data.error or "") .. chunk
+    end
+
+    shell.JobSpawn("curl", args, nil, onStderr, onCurlExit, data)
+end
+
+function sendPulseTimer(final)
+    return function()
+        local apiKey = config.GetGlobalOption("codestats.apikey")
+        local apiUrl = config.GetGlobalOption("codestats.apiurl")
+        sendPulse(apiKey, apiUrl, final)
     end
 end
 
@@ -96,19 +119,8 @@ function init()
     micro.After(timerInterval, sendPulseTimer(false))
 end
 
-function onBeforeTextEvent(sbuf, textEvent)
+function onBeforeTextEvent(sbuf)
     local def = sbuf.syntaxDef
-
-    local fileType
-    if def == nil then
-        fileType = def.header.FileType
-    else
-        fileType = "unknown"
-    end
-
-	if pulse[fileType] == nil then
-		pulse[fileType] = 0
-	end
-
-	pulse[fileType] = pulse[fileType] + 1
+    local fileType = def ~= nil and def.header.FileType or "unknown"
+    pulse[fileType] = (pulse[FileType] or 0) + 1
 end
