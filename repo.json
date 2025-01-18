@@ -32,6 +32,13 @@
       "Require": {
         "micro": ">=2.0.0"
       }
+    },
+	{
+      "Version": "1.1.1",
+      "Url": "https://github.com/redfire75369/code-stats-micro/archive/v1.1.1.zip",
+      "Require": {
+        "micro": ">=2.0.0"
+      }
     }
   ]
 }]

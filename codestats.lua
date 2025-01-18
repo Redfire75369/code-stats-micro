@@ -1,4 +1,4 @@
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 local micro = import("micro")
 local config = import("micro/config")
@@ -46,7 +46,8 @@ local function curlArgs(apiKey, apiUrl)
     return args, totalXp
 end
 
-local function onCurlExit(output)
+local function onCurlExit(output, data)
+	local data = data[1]
     if data.error ~= nil then
         micro.Log("codestats:", "Error -", data.error)
         micro.InfoBar():Message("Error - ", data.error)
@@ -93,9 +94,10 @@ local function sendPulse(apiKey, apiUrl, final)
     end
 
     local args, totalXp = curlArgs(apiKey, apiUrl)
-    local data = {}
-    data.totalXp = totalXp
-    data.final = final
+    local data = {
+		totalXp = totalXp,
+		final = final,
+	}
 
     local function onStderr(chunk)
         data.error = (data.error or "") .. chunk
